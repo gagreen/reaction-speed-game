@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reaction GP</title>
+<!-- 폰트는 로컬 파일 (행사장 오프라인 대비) — 라이선스: assets/fonts/OFL-*.{txt,md} -->
+<link rel="preload" href="assets/fonts/PressStart2P.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/Galmuri11.woff2" as="font" type="font/woff2" crossorigin>
+<link href="style.css" rel="stylesheet">
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv" width="320" height="180"></canvas>
+  <div id="flash"></div>
+
+  <!-- 설정 / 관리자(F1) -->
+  <section id="settings" class="screen panelwrap" hidden>
+    <form id="form" class="panel">
+      <h1 id="setTitle">RACE SETUP</h1>
+      <div class="grid">
+        <label>대회 이름</label><input name="eventName" maxlength="24">
+        <label>측정 횟수 N <small id="lockNote"></small></label><input name="rounds" type="number" min="1" max="10" required>
+        <label>랜덤 좌/우 모드</label><input name="random" type="checkbox">
+        <label>BGM</label><input name="bgm" type="checkbox">
+        <label>대기시간 최소(ms)</label><input name="waitMin" type="number" min="200" max="10000" step="100" required>
+        <label>대기시간 최대(ms)</label><input name="waitMax" type="number" min="200" max="10000" step="100" required>
+        <label>효과음 볼륨</label><input name="sfxVol" type="range" min="0" max="1" step="0.05">
+        <label>BGM 볼륨</label><input name="bgmVol" type="range" min="0" max="1" step="0.05">
+        <label>순위표 표시 개수</label>
+        <select name="topN"><option>5</option><option>10</option><option>15</option><option>20</option></select>
+      </div>
+      <div class="btns">
+        <button type="submit" id="okBtn">대회 시작 ⏎</button>
+        <span id="adminBtns">
+          <button type="button" id="exportBtn">JSON 내보내기</button>
+          <button type="button" id="importBtn">JSON 불러오기</button>
+          <button type="button" id="newBtn" class="danger">새 대회 시작 (기록 종료)</button>
+        </span>
+      </div>
+      <p class="hint" id="setHint"></p>
+      <input type="file" id="file" accept="application/json,.json" hidden>
+    </form>
+  </section>
+
+  <!-- 대기 화면: 순위 -->
+  <section id="attract" class="screen panelwrap" hidden>
+    <div class="panel rankpanel">
+      <h1 id="evName"></h1>
+      <div class="sub" id="evInfo"></div>
+      <h2>— RANKING —</h2>
+      <ol id="rank"></ol>
+      <div class="blink press">PRESS ENTER TO START</div>
+    </div>
+  </section>
+
+  <!-- 플레이 HUD -->
+  <section id="play" class="screen" hidden>
+    <div id="hudL"></div>
+    <div id="hudR"></div>
+    <div id="dir"></div>
+    <div id="msg"></div>
+    <div id="xmark">✕</div>
+  </section>
+
+  <!-- 결과 -->
+  <section id="result" class="screen panelwrap" hidden>
+    <div class="panel">
+      <h1 class="blink">FINISH!</h1>
+      <div id="resTotal"></div>
+      <div class="stats">
+        <div><small>AVG</small><b id="resAvg"></b></div>
+        <div><small>RANK</small><b id="resRank"></b></div>
+      </div>
+      <div id="resTimes"></div>
+      <div id="resTaunt"></div>
+      <div class="namebox">NAME <input id="nameIn" maxlength="10" autocomplete="off"></div>
+      <p class="hint">ENTER 기록 저장 · ESC 기록 안 함</p>
+      <div id="resTmi"></div>
+    </div>
+  </section>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
