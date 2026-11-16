@@ -89,3 +89,11 @@ button.danger{border-color:var(--red);color:#ff7070}
 .namebox{font-family:var(--px);font-size:3.5cqh}
 .namebox input{width:24cqw;font-size:4cqh;text-align:center;text-transform:uppercase;border-color:var(--main)}
 #resTmi{font-size:2cqh;color:#7aa;margin-top:2cqh;padding-top:1.5cqh;border-top:.3cqh dashed #333}
+.filepick{display:flex;gap:.6cqw}
+.filepick button{font-size:2.2cqh;padding:.6cqh 1cqw}
+/* YouTube BGM 플레이어: 소리만 쓰므로 화면 밖에 둔다 */
+#yt{position:fixed;left:-400px;top:0;width:200px;height:200px}
+/* BGM 항목 2줄이 늘어나서 설정 패널 간격을 줄임 */
+#form{padding-top:2cqh;padding-bottom:2cqh}
+#form .grid{gap:.6cqh 3cqw}
+#form .btns{margin-top:1.8cqh}

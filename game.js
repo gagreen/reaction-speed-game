@@ -7,7 +7,7 @@ const LS = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
-const DEF = { eventName: 'REACTION GP', rounds: 3, random: false, bgm: true, waitMin: 1000, waitMax: 4000, sfxVol: 0.7, bgmVol: 0.5, topN: 10 };
+const DEF = { eventName: 'REACTION GP', bgmUrl: '', rounds: 3, random: false, bgm: true, waitMin: 1000, waitMax: 4000, sfxVol: 0.7, bgmVol: 0.5, topN: 10 };
 let settings = { ...DEF, ...LS.get('rx.settings', {}) };
 let session = LS.get('rx.session', null); // { startedAt, rounds, records: [{name,total,avg,times,ts,random}] }
 let archive = LS.get('rx.archive', []);   // 지난 대회들
@@ -55,13 +55,56 @@ const sfx = {
   sad() { [392, 370, 349, 330].forEach((f, i) => tone(f, i === 3 ? 1.1 : 0.4, 'sawtooth', 0.25, i * 0.45, i === 3 ? 300 : 0)); },
 };
 
-// BGM: assets/bgm.mp3 가 있으면 그걸, 없으면 칩튠 루프
-const mp3 = new Audio('assets/bgm.mp3'); mp3.loop = true; let mp3ok = false;
-mp3.addEventListener('canplaythrough', () => { mp3ok = true; }, { once: true });
+// BGM 우선순위: 관리자 YouTube 링크 > 관리자 MP3 파일(IndexedDB) > assets/bgm.mp3 > 칩튠
+const ytId = u => ((u || '').match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([\w-]{11})/) || [])[1] || null;
+// MP3 파일은 localStorage(약 5MB)에 안 들어가서 IndexedDB에 Blob으로 보관
+function idb(mode, fn) {
+  return new Promise((res, rej) => {
+    const o = indexedDB.open('rx', 1);
+    o.onupgradeneeded = () => o.result.createObjectStore('kv');
+    o.onerror = () => rej(o.error);
+    o.onsuccess = () => { const tx = o.result.transaction('kv', mode), r = fn(tx.objectStore('kv')); tx.oncomplete = () => res(r.result); tx.onerror = () => rej(tx.error); };
+  });
+}
+const mp3 = new Audio(); mp3.loop = true; let mp3ok = false;
+mp3.addEventListener('canplaythrough', () => { mp3ok = true; });
+mp3.addEventListener('error', () => { mp3ok = false; });
+function setBgmFile(blob) {
+  bgmStop(); mp3ok = false;
+  if (mp3.src.startsWith('blob:')) URL.revokeObjectURL(mp3.src);
+  mp3.src = blob ? URL.createObjectURL(blob) : 'assets/bgm.mp3';
+  $('#bgmFileName').textContent = blob ? `(${blob.name || 'MP3'})` : '(기본)';
+}
+idb('readonly', s => s.get('bgm')).then(b => setBgmFile(b || null), () => setBgmFile(null));
+
+// YouTube: 공식 IFrame Player API (인터넷 필요). 링크가 있을 때만 로드
+let yt = null, ytReady = false, ytCur = null, ytWant = false;
+function ytPrepare() {
+  const id = ytId(settings.bgmUrl);
+  if (!id) { ytCur = null; if (ytReady) yt.stopVideo(); return; }
+  if (id === ytCur) return;
+  ytCur = id;
+  if (ytReady) return yt.cueVideoById(id);
+  if (window.YT && YT.Player) return makeYt();
+  window.onYouTubeIframeAPIReady = makeYt;
+  if (!document.querySelector('script[src*="iframe_api"]')) document.head.append(Object.assign(document.createElement('script'), { src: 'https://www.youtube.com/iframe_api' }));
+}
+function makeYt() {
+  if (yt) return;
+  yt = new YT.Player('yt', {
+    videoId: ytCur, playerVars: { controls: 0, playsinline: 1 },
+    events: {
+      onReady: () => { ytReady = true; if (ytCur) yt.cueVideoById(ytCur); if (ytWant) bgmStart(); },
+      onStateChange: e => { if (e.data === YT.PlayerState.ENDED && ytWant) { yt.seekTo(0); yt.playVideo(); } }, // 반복 재생
+    },
+  });
+}
+
 let bgmTimer = null, bgmStep = 0; // 게임 사이에도 BGM 재생 위치 유지
 function bgmStart() {
   bgmStop();
   if (!settings.bgm) return;
+  if (ytCur) { ytWant = true; if (ytReady) { yt.setVolume(Math.round(settings.bgmVol * 100)); yt.playVideo(); } return; }
   if (mp3ok) { mp3.volume = settings.bgmVol; mp3.play().catch(() => {}); return; }
   const a = actx(), spb = 60 / 150 / 4, TR = [0, 5, 3, -2], ARP = [0, 7, 12, 7, 15, 12, 7, 12];
   const midi = n => 440 * 2 ** ((n - 69) / 12);
@@ -77,7 +120,7 @@ function bgmStart() {
     }
   }, 50);
 }
-function bgmStop() { clearInterval(bgmTimer); bgmTimer = null; mp3.pause(); }
+function bgmStop() { clearInterval(bgmTimer); bgmTimer = null; mp3.pause(); ytWant = false; if (ytReady) yt.pauseVideo(); }
 
 // ---------- 렌더링: 레퍼런스 일러스트(assets/bg.webp, 1672x941) 위에 신호등·LED·기어만 덮어 그림 ----------
 const W = 1672, H = 941, cv = $('#cv'), c = cv.getContext('2d');
@@ -169,8 +212,10 @@ function openSettings(mode) {
 form.addEventListener('submit', e => {
   e.preventDefault();
   const f = form.elements, n = (k, lo, hi) => Math.min(hi, Math.max(lo, Number(f[k].value) || DEF[k]));
-  const waitMin = n('waitMin', 200, 10000), waitMax = n('waitMax', 200, 10000);
+  const waitMin = n('waitMin', 200, 10000), waitMax = n('waitMax', 200, 10000), bgmUrl = f.bgmUrl.value.trim();
+  if (bgmUrl && !ytId(bgmUrl)) { alert('YouTube 링크를 확인해 주세요. (예: https://youtu.be/영상ID)'); f.bgmUrl.focus(); return; }
   settings = {
+    bgmUrl,
     eventName: f.eventName.value.trim() || DEF.eventName,
     rounds: session ? session.rounds : Math.round(n('rounds', 1, 10)),
     random: f.random.checked, bgm: f.bgm.checked,
@@ -178,8 +223,20 @@ form.addEventListener('submit', e => {
     sfxVol: Number(f.sfxVol.value), bgmVol: Number(f.bgmVol.value), topN: Number(f.topN.value),
   };
   if (!session) session = { startedAt: Date.now(), rounds: settings.rounds, records: [] };
-  save(); actx(); toAttract();
+  save(); actx(); ytPrepare(); toAttract();
 });
+$('#bgmFileBtn').onclick = () => $('#bgmFile').click();
+$('#bgmFile').onchange = async e => {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  if (!file.type.startsWith('audio/') && !/\.mp3$/i.test(file.name)) return alert('오디오(MP3) 파일만 선택할 수 있습니다.');
+  try { await idb('readwrite', s => s.put(file, 'bgm')); setBgmFile(file); }
+  catch (err) { alert('MP3 저장 실패: ' + err.message); }
+};
+$('#bgmFileDel').onclick = async () => {
+  try { await idb('readwrite', s => s.delete('bgm')); setBgmFile(null); }
+  catch (err) { alert('MP3 삭제 실패: ' + err.message); }
+};
 $('#newBtn').onclick = () => {
   if (!confirm(`현재 대회 기록(${session.records.length}건)을 종료하고 새 대회를 시작할까요?\n(기록은 보관함에 남고, JSON 내보내기로 받을 수 있습니다)`)) return;
   if (session.records.length) archive.push({ ...session, endedAt: Date.now(), eventName: settings.eventName });
@@ -199,7 +256,7 @@ $('#file').onchange = async e => {
     if (typeof d !== 'object' || !d || (d.session && !Array.isArray(d.session.records))) throw new Error('형식 오류');
     if (!confirm('불러온 파일로 현재 설정·기록을 덮어쓸까요?')) return;
     settings = { ...DEF, ...(d.settings || {}) }; session = d.session || null; archive = Array.isArray(d.archive) ? d.archive : [];
-    save(); openSettings(session ? 'admin' : 'setup');
+    save(); ytPrepare(); openSettings(session ? 'admin' : 'setup');
   } catch (err) { alert('JSON 불러오기 실패: ' + err.message); }
 };
 
@@ -325,5 +382,6 @@ console.assert(ranked([{ total: 900, ts: 2 }, { total: 500, ts: 3 }, { total: 50
 console.assert(TMI.find(([lim]) => 250 < lim)[1] === '강아지', 'tmi lookup');
 
 // ---------- 시작 ----------
+ytPrepare();
 session ? toAttract() : openSettings('setup');
 requestAnimationFrame(render);

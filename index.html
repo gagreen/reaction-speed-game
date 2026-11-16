@@ -23,6 +23,9 @@
         <label>측정 횟수 N <small id="lockNote"></small></label><input name="rounds" type="number" min="1" max="10" required>
         <label>랜덤 좌/우 모드</label><input name="random" type="checkbox">
         <label>BGM</label><input name="bgm" type="checkbox">
+        <label>BGM YouTube 링크 <small>(우선)</small></label><input name="bgmUrl" type="url" placeholder="https://youtu.be/..." autocomplete="off">
+        <label>BGM MP3 파일 <small id="bgmFileName"></small></label>
+        <span class="filepick"><button type="button" id="bgmFileBtn">파일 선택</button><button type="button" id="bgmFileDel">삭제</button></span>
         <label>대기시간 최소(ms)</label><input name="waitMin" type="number" min="200" max="10000" step="100" required>
         <label>대기시간 최대(ms)</label><input name="waitMax" type="number" min="200" max="10000" step="100" required>
         <label>효과음 볼륨</label><input name="sfxVol" type="range" min="0" max="1" step="0.05">
@@ -40,6 +43,7 @@
       </div>
       <p class="hint" id="setHint"></p>
       <input type="file" id="file" accept="application/json,.json" hidden>
+      <input type="file" id="bgmFile" accept="audio/*,.mp3" hidden>
     </form>
   </section>
 
@@ -80,6 +84,7 @@
     </div>
   </section>
 </div>
+<div id="yt"></div>
 <script src="game.js"></script>
 </body>
 </html>
