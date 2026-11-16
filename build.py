@@ -3,7 +3,7 @@
 import base64, pathlib, shutil, subprocess, sys
 
 ROOT = pathlib.Path(__file__).parent
-MIME = {'.woff2': 'font/woff2', '.webp': 'image/webp', '.mp3': 'audio/mpeg'}
+MIME = {'.woff2': 'font/woff2', '.webp': 'image/webp'}
 
 def data_uri(rel):
     p = ROOT / rel
@@ -20,8 +20,6 @@ for f in ('assets/fonts/PressStart2P.woff2', 'assets/fonts/Galmuri11.woff2'):
 js = (ROOT / 'game.js').read_text('utf-8')
 # file:// 페이지에서 그린 이미지는 canvas getImageData가 막힘 → data: URI로 넣으면 해결
 js = sub(js, "'assets/bg.webp'", f"'{data_uri('assets/bg.webp')}'")
-if (ROOT / 'assets/bgm.mp3').exists():  # 없으면 칩튠으로 대체됨
-    js = sub(js, "'assets/bgm.mp3'", f"'{data_uri('assets/bgm.mp3')}'")
 assert '</script' not in js
 
 html = (ROOT / 'index.html').read_text('utf-8')

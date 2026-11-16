@@ -24,7 +24,7 @@ python3 build.py
 | `reaction-gp.html`                                | 브라우저만 있으면 어디서나 (더블클릭) | **안 됨** (설정 화면에서 링크 칸이 숨겨지고 MP3 → 칩튠 재생) |
 
 - 실행 파일을 더블클릭하면 게임 서버가 켜지고 브라우저가 <http://127.0.0.1:8123> 으로 열립니다. 함께 뜨는 창을 닫으면 종료됩니다.
-- 폰트·배경·BGM이 모두 파일 안에 들어 있으니 해당 파일 하나만 옮기면 됩니다.
+- 폰트·배경이 모두 파일 안에 들어 있으니 해당 파일 하나만 옮기면 됩니다.
 - Mac에서 "확인되지 않은 개발자" 경고가 뜨면 파일을 우클릭 → 열기 를 누르세요.
 - 기록은 주소별로 저장됩니다. 실행 파일(`127.0.0.1:8123`), 개발용 서버(`localhost:8123`), HTML 파일은 기록을 공유하지 않으니 옮길 때는 F1 → JSON 내보내기/불러오기를 쓰세요.
 
@@ -100,7 +100,6 @@ index.html          화면 구성 (설정 / 순위표 / 플레이 / 결과)
 game.js             게임 로직, 사운드(Web Audio), 저장, 키 조작
 style.css           스타일, 폰트 지정
 assets/bg.webp      배경 픽셀아트 (신호등 불빛 색을 이 이미지에서 추출)
-assets/bgm.mp3      배경음악 (없으면 내장 칩튠 루프 재생)
 assets/fonts/       Press Start 2P, Galmuri11 폰트와 라이선스
 build.py            배포 파일 빌드 (dist/: 단일 HTML + OS별 실행 파일)
 server.js           실행 파일 진입점 (HTML 내장 localhost 서버)
@@ -109,4 +108,4 @@ server.js           실행 파일 진입점 (HTML 내장 localhost 서버)
 ## 라이선스
 
 - 폰트: [Press Start 2P](assets/fonts/OFL-PressStart2P.txt), [Galmuri](assets/fonts/OFL-Galmuri.md) — SIL Open Font License 1.1
-- `assets/bg.webp`, `assets/bgm.mp3`: 출처·라이선스 확인 필요
+- `assets/bg.webp`: 출처·라이선스 확인 필요

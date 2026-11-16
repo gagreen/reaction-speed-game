@@ -55,7 +55,7 @@ const sfx = {
   sad() { [392, 370, 349, 330].forEach((f, i) => tone(f, i === 3 ? 1.1 : 0.4, 'sawtooth', 0.25, i * 0.45, i === 3 ? 300 : 0)); },
 };
 
-// BGM 우선순위: 관리자 YouTube 링크 > 관리자 MP3 파일(IndexedDB) > assets/bgm.mp3 > 칩튠
+// BGM 우선순위: 관리자 YouTube 링크 > 관리자 MP3 파일(IndexedDB) > 칩튠
 const ytId = u => ((u || '').match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([\w-]{11})/) || [])[1] || null;
 // MP3 파일은 localStorage(약 5MB)에 안 들어가서 IndexedDB에 Blob으로 보관
 function idb(mode, fn) {
@@ -72,8 +72,8 @@ mp3.addEventListener('error', () => { mp3ok = false; });
 function setBgmFile(blob) {
   bgmStop(); mp3ok = false;
   if (mp3.src.startsWith('blob:')) URL.revokeObjectURL(mp3.src);
-  mp3.src = blob ? URL.createObjectURL(blob) : 'assets/bgm.mp3';
-  $('#bgmFileName').textContent = blob ? `(${blob.name || 'MP3'})` : '(기본)';
+  if (blob) mp3.src = URL.createObjectURL(blob); else { mp3.removeAttribute('src'); mp3.load(); } // load(): 이전 파일의 늦은 canplaythrough 차단
+  $('#bgmFileName').textContent = blob ? `(${blob.name || 'MP3'})` : '(없음)';
 }
 idb('readonly', s => s.get('bgm')).then(b => setBgmFile(b || null), () => setBgmFile(null));
 
