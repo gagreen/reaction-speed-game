@@ -79,8 +79,9 @@ idb('readonly', s => s.get('bgm')).then(b => setBgmFile(b || null), () => setBgm
 
 // YouTube: 공식 IFrame Player API (인터넷 필요). 링크가 있을 때만 로드
 let yt = null, ytReady = false, ytCur = null, ytWant = false;
+const ytBlocked = location.protocol === 'file:'; // YouTube 플레이어는 file:// 페이지에서 재생 거부 → 다음 BGM으로 대체
 function ytPrepare() {
-  const id = ytId(settings.bgmUrl);
+  const id = ytBlocked ? null : ytId(settings.bgmUrl);
   if (!id) { ytCur = null; if (ytReady) yt.stopVideo(); return; }
   if (id === ytCur) return;
   ytCur = id;
@@ -191,6 +192,8 @@ const esc = s => String(s).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`);
 
 // ---------- 설정 / 관리자 ----------
 const form = $('#form');
+// file:// 에선 YouTube가 재생되지 않으므로 링크 칸을 숨김 (값은 보존해 JSON 내보내기에 그대로 포함)
+if (ytBlocked) form.elements.bgmUrl.hidden = form.elements.bgmUrl.previousElementSibling.hidden = true;
 function openSettings(mode) {
   if (screen === 'play') abortGame();
   setMode = mode;
@@ -213,7 +216,7 @@ form.addEventListener('submit', e => {
   e.preventDefault();
   const f = form.elements, n = (k, lo, hi) => Math.min(hi, Math.max(lo, Number(f[k].value) || DEF[k]));
   const waitMin = n('waitMin', 200, 10000), waitMax = n('waitMax', 200, 10000), bgmUrl = f.bgmUrl.value.trim();
-  if (bgmUrl && !ytId(bgmUrl)) { alert('YouTube 링크를 확인해 주세요. (예: https://youtu.be/영상ID)'); f.bgmUrl.focus(); return; }
+  if (bgmUrl && !ytBlocked && !ytId(bgmUrl)) { alert('YouTube 링크를 확인해 주세요. (예: https://youtu.be/영상ID)'); f.bgmUrl.focus(); return; }
   settings = {
     bgmUrl,
     eventName: f.eventName.value.trim() || DEF.eventName,
