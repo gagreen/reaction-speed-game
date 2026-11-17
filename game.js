@@ -341,6 +341,14 @@ const isRed = (r, g, b) => r > 90 && r > g * 1.6 && r > b * 1.6;
 let art = null; // { base, lit[], off[], green[], ledOn, ledOff }
 const bgImg = new Image();
 bgImg.src = "assets/bg.webp";
+const logoImg = new Image();
+logoImg.src = "assets/logo.svg";
+const MARK = { x: 8, y: 14, w: 212, h: 88 }; // logo.svg 안에서 RS 마크(속도선 포함) 영역
+const LOGO_SPOTS = [ // [x0, y0, x1, y1, 픽셀 크기] 원본 F1 로고 자리
+  [1410, 133, 1596, 191, 4], // 오른쪽 전광판
+  [58, 389, 192, 448, 4], // 왼쪽 벽
+  [500, 414, 542, 441, 2], // 왼쪽 벽 (먼 쪽)
+];
 bgImg
   .decode()
   .then(() => {
@@ -388,6 +396,18 @@ bgImg
       g.fillStyle = `rgb(${r},${gg},${b})`;
       g.fillRect(LBOX.x, y, LBOX.w, 1);
     }
+    // 배경 속 F1 로고 → 자체 RS 마크. SVG를 그리면 canvas가 읽기 불가가 될 수 있어 모든 getImageData 이후에 실행
+    logoImg.decode().then(() => {
+      g.imageSmoothingEnabled = false;
+      for (const [x0, y0, x1, y1, P] of LOGO_SPOTS) {
+        const w = x1 - x0, h = y1 - y0;
+        g.drawImage(recolor(base, x0, y0, w, h, (r, gg, b) => isRed(r, gg, b) && [34, 33, 38]), x0, y0); // 원래 로고 지우기
+        const mh = h - 6, mw = Math.round(mh * MARK.w / MARK.h);
+        const sm = mk(Math.round(mw / P), Math.round(mh / P)); // 작게 그렸다가 계단식으로 키워 배경 픽셀 질감에 맞춤
+        sm.getContext("2d").drawImage(logoImg, MARK.x, MARK.y, MARK.w, MARK.h, 0, 0, sm.width, sm.height);
+        g.drawImage(sm, Math.round(x0 + (w - mw) / 2), y0 + 3, mw, mh);
+      }
+    }).catch(() => {});
   })
   .catch(() => {});
 
