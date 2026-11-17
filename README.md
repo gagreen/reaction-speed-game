@@ -41,6 +41,42 @@ python3 -m http.server 8123
 처음 실행하면 **설정 화면**이 나옵니다. 대회 정보를 입력하고 Enter를 누르면 대기 화면(순위표)으로 넘어갑니다.
 행사장에서는 F11로 전체화면을 켜 두는 것을 권장합니다.
 
+### 온라인 공개용: GitHub Pages
+
+`*.github.io` 주소로 열면 **공개 모드**로 동작합니다.
+
+- 설정 화면 없이 바로 순위표(대기 화면)가 나옵니다. 기본 설정(3라운드, 랜덤 좌/우 끔)으로 고정되고 F1 관리자 화면은 열리지 않습니다.
+- 순위는 `online.js`가 Firestore에 저장해 모든 방문자가 같은 순위표를 봅니다. 연결에 실패하면 각자 브라우저 메모리에만 남습니다.
+- 온라인 관련 코드는 모두 `online.js`에 있고 공개 모드에서만 불러오므로, 행사장용 빌드(`dist/`)에는 들어가지 않습니다.
+- 로컬에서 확인: <http://localhost:8123/?public>
+
+**Firebase 설정 (처음 한 번)**
+
+1. [Firebase 콘솔](https://console.firebase.google.com)에서 프로젝트를 만듭니다. 이때 **Google 애널리틱스 사용**을 켭니다(GA4).
+2. 빌드 → **Firestore Database** → 데이터베이스 만들기 (프로덕션 모드).
+3. Firestore → **규칙** 탭에 아래를 붙여 넣고 게시합니다. 읽기와 새 기록 추가만 허용하고 수정·삭제는 막습니다.
+
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{db}/documents {
+       match /scores/{id} {
+         allow read: if true;
+         allow create: if request.resource.data.keys().hasOnly(['name', 'total', 'avg', 'times', 'ts', 'random'])
+           && request.resource.data.name is string && request.resource.data.name.size() <= 10
+           && request.resource.data.total is int && request.resource.data.total >= 0 && request.resource.data.total <= 9000
+           && request.resource.data.times is list && request.resource.data.times.size() == 3;
+       }
+     }
+   }
+   ```
+
+4. 프로젝트 설정 → 내 앱 → **웹 앱 추가** → 나오는 `firebaseConfig` 값을 `online.js` 위쪽 `FIREBASE`에 그대로 옮기고 커밋·푸시합니다.
+   (이 값은 공개되어도 되는 값입니다. 접근 제어는 3번 규칙이 합니다.)
+5. GA4: 페이지 조회는 자동, 게임 이벤트는 `game_start`, `game_finish`, `score_save`로 기록됩니다. Firebase 콘솔 → Analytics 또는 GA4에서 확인합니다.
+
+> 기록은 브라우저에서 계산해 보내므로, 마음먹고 조작한 점수를 막을 수는 없습니다. 이상한 기록은 Firestore 콘솔에서 직접 지우세요.
+
 ## 게임 규칙
 
 1. 대기 화면에서 **Enter**를 누르면 시작합니다.
@@ -98,6 +134,7 @@ python3 -m http.server 8123
 ```
 index.html          화면 구성 (설정 / 순위표 / 플레이 / 결과)
 game.js             게임 로직, 사운드(Web Audio), 저장, 키 조작
+online.js           공개 모드 전용: Firestore 온라인 순위 + GA4 (Firebase 설정값)
 style.css           스타일, 폰트 지정
 assets/bg.webp      배경 픽셀아트 (신호등 불빛 색을 이 이미지에서 추출)
 assets/fonts/       Press Start 2P, Galmuri11 폰트와 라이선스

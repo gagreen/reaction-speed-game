@@ -19,7 +19,7 @@ for f in ('assets/fonts/PressStart2P.woff2', 'assets/fonts/Galmuri11.woff2'):
 
 js = (ROOT / 'game.js').read_text('utf-8')
 # file:// 페이지에서 그린 이미지는 canvas getImageData가 막힘 → data: URI로 넣으면 해결
-js = sub(js, "'assets/bg.webp'", f"'{data_uri('assets/bg.webp')}'")
+js = sub(js, '"assets/bg.webp"', f'"{data_uri("assets/bg.webp")}"')
 assert '</script' not in js
 
 html = (ROOT / 'index.html').read_text('utf-8')
