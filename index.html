@@ -54,7 +54,7 @@
       <div class="sub" id="evInfo"></div>
       <h2>— RANKING —</h2>
       <ol id="rank"></ol>
-      <div class="blink press">PRESS ENTER TO START</div>
+      <div class="blink press"><span class="kb">PRESS ENTER TO START</span><span class="tc">TAP TO START</span></div>
     </div>
   </section>
 
@@ -78,8 +78,8 @@
       </div>
       <div id="resTimes"></div>
       <div id="resTaunt"></div>
-      <div class="namebox">NAME <input id="nameIn" maxlength="10" autocomplete="off"></div>
-      <p class="hint">ENTER 기록 저장 · ESC 기록 안 함</p>
+      <div class="namebox">NAME <input id="nameIn" maxlength="10" autocomplete="off" enterkeyhint="done"></div>
+      <div class="btns"><button type="button" id="saveBtn" class="go">기록 저장 <span class="kb">⏎</span></button><button type="button" id="skipBtn">기록 안 함 <span class="kb">ESC</span></button></div>
       <div id="resTmi"></div>
     </div>
   </section>

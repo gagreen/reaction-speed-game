@@ -2,7 +2,7 @@
 @font-face{font-family:'Galmuri11';src:url(assets/fonts/Galmuri11.woff2) format('woff2');font-display:swap}
 :root{--main:#F2B33D;--ink:#14161C;--red:#e10600;--dark:#0a0a0b;--gray:#1c1c20;--fg:#f2f2f2;--yel:#ffd400;--grn:#2aff4a;--px:'Press Start 2P','Galmuri11',monospace;--ko:'Galmuri11','Press Start 2P',monospace}
 html,body{margin:0;height:100%;background:#000;overflow:hidden;color:var(--fg);font-family:var(--ko);user-select:none;cursor:crosshair}
-#stage{position:absolute;inset:0;margin:auto;width:min(100vw,177.78vh);height:min(100vh,56.25vw);container-type:size;overflow:hidden;background:var(--dark)}
+#stage{position:absolute;inset:0;margin:auto;width:min(100vw,177.78vh);height:min(100vh,56.25vw);width:min(100vw,177.78dvh);height:min(100dvh,56.25vw);container-type:size;overflow:hidden;background:var(--dark)}
 canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
 .screen{position:absolute;inset:0}
 [hidden]{display:none!important}
@@ -29,7 +29,7 @@ input:disabled{color:#777}
 .btns{margin-top:2.5cqh;display:flex;gap:1.2cqw;justify-content:center;flex-wrap:wrap}
 .btns span{display:contents}
 button{cursor:pointer;font-size:2.5cqh;padding:1cqh 1.5cqw}
-button[type=submit]{background:var(--main);color:var(--ink);border-color:var(--main)}
+button[type=submit],button.go{background:var(--main);color:var(--ink);border-color:var(--main)}
 button.danger{border-color:var(--red);color:#ff7070}
 
 /* 순위 */
@@ -97,3 +97,25 @@ button.danger{border-color:var(--red);color:#ff7070}
 #form{padding-top:2cqh;padding-bottom:2cqh}
 #form .grid{gap:.6cqh 3cqw}
 #form .btns{margin-top:1.8cqh}
+
+/* 모바일: 터치 지연·확대·길게 누르기 메뉴 방지, 키보드 안내 대신 터치 안내 */
+#stage{touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+.tc{display:none}
+@media (pointer:coarse){.kb{display:none}.tc{display:inline}}
+#attract{cursor:pointer}
+/* 세로 화면: 화면 전체를 쓰고, 그림은 신호등 5개가 다 보이는 높이로 가운데 둔다. 각 화면은 그림 영역과 같은 상자 → cqh 기준이 그 높이 */
+@media (orientation:portrait){
+  #stage{width:100%;height:100%;--vh:min(100cqh,135cqw)}
+  canvas{left:50%;top:50%;height:var(--vh);width:calc(var(--vh)*1.7768);transform:translate(-50%,-50%)}
+  .screen{height:var(--vh);margin:auto 0;container-type:size}
+  .panel{max-width:94cqw;padding:3cqh 4cqw;overflow:auto}
+  .rankpanel,#result .panel{min-width:0;width:92cqw}
+  #rank li{grid-template-columns:3em 1fr auto;gap:.6em}
+  #rank li .a{display:none}
+  #hudL,#hudR{font-size:2.6cqh;max-width:46cqw}
+  #dir{font-size:8cqh}
+  #msg{font-size:8cqh}
+  .stats div{min-width:0;padding:1cqh 4cqw}
+  .namebox input{width:50cqw}
+  .btns button{font-size:3cqh;padding:1.5cqh 4cqw}
+}

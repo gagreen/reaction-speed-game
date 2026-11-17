@@ -705,7 +705,8 @@ function goGreen() {
   });
   if (settings.random) {
     game.dir = Math.random() < 0.5 ? "L" : "R";
-    $("#dir").textContent = game.dir === "L" ? "◀ 왼쪽 클릭" : "오른쪽 클릭 ▶";
+    const v = TOUCH ? "터치" : "클릭";
+    $("#dir").textContent = game.dir === "L" ? `◀ 왼쪽 ${v}` : `오른쪽 ${v} ▶`;
   }
   later(() => record(TIMEOUT_MS, "timeout"), TIMEOUT_MS);
 }
@@ -738,13 +739,20 @@ function record(ms, kind) {
     nextRound();
   }, 1700);
 }
+// 터치는 버튼 구분이 없으므로 화면 왼쪽/오른쪽 절반을 좌/우 클릭으로 본다
+const TOUCH = matchMedia("(pointer:coarse)").matches;
 stage.addEventListener("pointerdown", (e) => {
-  if (screen !== "play" || !game || (e.button !== 0 && e.button !== 2)) return;
+  if (screen !== "play" || !game) return;
+  const button =
+    e.pointerType === "mouse" || !settings.random
+      ? e.button
+      : e.clientX < innerWidth / 2 ? 0 : 2;
+  if (button !== 0 && button !== 2) return;
   const p = game.phase;
   if (p === "red" || p === "wait") return record(FALSE_MS, "false");
   if (p !== "green") return;
-  if (!settings.random && e.button !== 0) return; // 일반 모드는 좌클릭만
-  if (game.dir && (e.button === 0 ? "L" : "R") !== game.dir)
+  if (!settings.random && button !== 0) return; // 일반 모드는 좌클릭만
+  if (game.dir && (button === 0 ? "L" : "R") !== game.dir)
     return record(FALSE_MS, "wrong");
   record(Math.max(0, Math.round(e.timeStamp - game.greenAt)), "ok");
 });
@@ -814,9 +822,16 @@ function finish() {
   show("result");
   const ni = $("#nameIn");
   ni.value = "";
-  ni.focus();
+  if (!TOUCH) ni.focus(); // 모바일은 키보드가 화면을 가리므로 자동으로 띄우지 않음
 }
+$("#attract").onclick = () => startGame(); // 모바일은 Enter가 없으므로 탭으로 시작
+$("#saveBtn").onclick = () => saveResult();
+$("#skipBtn").onclick = () => {
+  pending = null;
+  toAttract();
+};
 function saveResult() {
+  if (!pending) return; // 저장 버튼에서 Enter를 누르면 keydown과 click이 둘 다 옴
   pending.name = ($("#nameIn").value.trim() || "PLAYER")
     .toUpperCase()
     .slice(0, 10);
