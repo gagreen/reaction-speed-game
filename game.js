@@ -33,7 +33,7 @@ const DEF = {
 const PUBLIC =
   location.hostname.endsWith("github.io") ||
   new URLSearchParams(location.search).has("public");
-let settings = PUBLIC ? { ...DEF } : { ...DEF, ...LS.get("rx.settings", {}) };
+let settings = PUBLIC ? { ...DEF, random: true } : { ...DEF, ...LS.get("rx.settings", {}) };
 let session = PUBLIC
   ? { startedAt: Date.now(), rounds: DEF.rounds, records: [] }
   : LS.get("rx.session", null); // { startedAt, rounds, records: [{name,total,avg,times,ts,random}] }

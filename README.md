@@ -45,7 +45,7 @@ python3 -m http.server 8123
 
 `*.github.io` 주소로 열면 **공개 모드**로 동작합니다.
 
-- 설정 화면 없이 바로 순위표(대기 화면)가 나옵니다. 기본 설정(3라운드, 랜덤 좌/우 끔)으로 고정되고 F1 관리자 화면은 열리지 않습니다.
+- 설정 화면 없이 바로 순위표(대기 화면)가 나옵니다. 기본 설정(3라운드, 랜덤 좌/우 켬)으로 고정되고 F1 관리자 화면은 열리지 않습니다.
 - 순위는 `online.js`가 Firestore에 저장해 모든 방문자가 같은 순위표를 봅니다. 연결에 실패하면 각자 브라우저 메모리에만 남습니다.
 - 온라인 관련 코드는 모두 `online.js`에 있고 공개 모드에서만 불러오므로, 행사장용 빌드(`dist/`)에는 들어가지 않습니다.
 - 로컬에서 확인: <http://localhost:8123/?public>
@@ -54,7 +54,8 @@ python3 -m http.server 8123
 
 1. [Firebase 콘솔](https://console.firebase.google.com)에서 프로젝트를 만듭니다. 이때 **Google 애널리틱스 사용**을 켭니다(GA4).
 2. 빌드 → **Firestore Database** → 데이터베이스 만들기 (프로덕션 모드).
-3. Firestore → **규칙** 탭에 아래를 붙여 넣고 게시합니다. 읽기와 새 기록 추가만 허용하고 수정·삭제는 막습니다.
+3. Firestore → **규칙** 탭에 아래를 붙여 넣고 게시합니다. 읽기와 새 기록 추가만 허용하고 **수정·삭제는 누구도 못 합니다**(AI·스크립트 포함, 지우기는 콘솔에서만).
+   새 기록도 게임이 만들 수 있는 값만 받습니다: 라운드당 100ms(사람 한계)~3000ms(시간 초과), 합계·평균이 라운드 기록과 일치, 시각은 서버 시각 ±1분.
 
    ```
    rules_version = '2';
@@ -62,10 +63,20 @@ python3 -m http.server 8123
      match /databases/{db}/documents {
        match /scores/{id} {
          allow read: if true;
-         allow create: if request.resource.data.keys().hasOnly(['name', 'total', 'avg', 'times', 'ts', 'random'])
-           && request.resource.data.name is string && request.resource.data.name.size() <= 10
-           && request.resource.data.total is int && request.resource.data.total >= 0 && request.resource.data.total <= 9000
-           && request.resource.data.times is list && request.resource.data.times.size() == 3;
+         allow update, delete: if false;
+         allow create: if valid(request.resource.data);
+       }
+       function lap(t) { return t is int && t >= 100 && t <= 3000; }
+       function valid(d) {
+         return d.keys().hasOnly(['name', 'total', 'avg', 'times', 'ts', 'random'])
+           && d.keys().hasAll(['name', 'total', 'avg', 'times', 'ts', 'random'])
+           && d.name is string && d.name.size() >= 1 && d.name.size() <= 10
+           && d.random is bool
+           && d.times is list && d.times.size() == 3
+           && lap(d.times[0]) && lap(d.times[1]) && lap(d.times[2])
+           && d.total == d.times[0] + d.times[1] + d.times[2]
+           && d.avg is int && math.abs(d.total - d.avg * 3) <= 1
+           && d.ts is int && math.abs(d.ts - request.time.toMillis()) <= 60000;
        }
      }
    }
@@ -75,7 +86,7 @@ python3 -m http.server 8123
    (이 값은 공개되어도 되는 값입니다. 접근 제어는 3번 규칙이 합니다.)
 5. GA4: 페이지 조회는 자동, 게임 이벤트는 `game_start`, `game_finish`, `score_save`로 기록됩니다. Firebase 콘솔 → Analytics 또는 GA4에서 확인합니다.
 
-> 기록은 브라우저에서 계산해 보내므로, 마음먹고 조작한 점수를 막을 수는 없습니다. 이상한 기록은 Firestore 콘솔에서 직접 지우세요.
+> 기록은 브라우저에서 계산해 보내므로, 규칙 범위 안의 그럴듯한 가짜 점수(예: 매 라운드 100ms)까지 막을 수는 없습니다. 사이트 밖 스크립트까지 막으려면 Firebase **App Check**(reCAPTCHA v3)를 켜야 합니다. 이상한 기록은 Firestore 콘솔에서 직접 지우세요.
 
 ## 게임 규칙
 
